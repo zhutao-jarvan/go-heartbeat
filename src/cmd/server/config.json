@@ -1,0 +1,10 @@
+{
+	"domain": "127.0.0.1",
+	"port": 18525,
+	"rpc_port": 1234,
+	"db_user": "root",
+	"db_password": "Dtjarvan123",
+	"db_domain": "192.168.102.10",
+	"db_port": "3306",
+	"db_name": "test"
+}
