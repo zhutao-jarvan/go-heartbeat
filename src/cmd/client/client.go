@@ -1,35 +1,26 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"net"
+	"heartbeat"
 )
 
+var logCfgFile *string = flag.String("l", "D:\\src\\go\\heartbeat\\src\\cmd\\client\\log_config.xml", "Server log config file, default is log_config.xml")
+
 func main() {
-	udpAddr, err := net.ResolveUDPAddr("udp4", "127.0.0.1:18525")
+	c := heartbeat.NewClient("127.0.0.1", 18525, *logCfgFile)
+	defer c.UdpConn.Close()
+
+	c.Id = 9527
+	c.Magic = 945201314
+
+	c.HeartbeatSync()
+	err, resp := c.HeartbeatResp()
 	if err != nil {
-		fmt.Println("ResolveUDPAddr fail! info:", err.Error())
+		fmt.Printf("Heartbeat recv fail: %s\n", err.Error())
 		return
 	}
 
-	udpConn, err := net.DialUDP("udp", nil, udpAddr)
-	if err != nil {
-		fmt.Println("ListenUDP fail! info:", err.Error())
-		return
-	}
-	defer udpConn.Close()
-
-	fmt.Println("Udp dial ok!")
-
-	len, err := udpConn.Write([]byte("Client send hello\n"))
-	if err != nil{
-		fmt.Println("Client send fail! info:", err.Error())
-		return
-	}
-	fmt.Println("client write len:", len)
-
-	buf := make([]byte, 1024)
-	len, _ = udpConn.Read(buf)
-	fmt.Println("client read len:", len)
-	fmt.Println("client read data:", string(buf))
+	fmt.Println("Heartbeat response: id[", resp.Id, "], magic[", resp.Magic, "], backlog[", resp.Backlog, "]")
 }

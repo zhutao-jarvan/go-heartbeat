@@ -1,12 +1,12 @@
 package heartbeat
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	log "github.com/cihub/seelog"
 	"io/ioutil"
 	"net"
-	"strings"
 )
 
 type ClientNode struct {
@@ -50,15 +50,20 @@ func parseServerConfig(configFile string) (cfg *ServerConfig) {
 }
 
 func (s *Server) heartbeatServer() {
+	buf := make([]byte, CMsgLen)
 	for {
-		buf := make([]byte, 1024)
 		len, udpAddr, err := s.udpConn.ReadFromUDP(buf)
 		ChkErrOnExit(err, fmt.Sprintf("Server ReadFromUDP failed!"))
 
-		msg := strings.Replace(string(buf), "\n", "", 1)
-		log.Debug("Read len[%d], msg: %s\n", len, msg)
+		if len != CMsgLen {
+			log.Errorf("Read len[%d] != CMsgLen[%d]", len, CMsgLen)
+			continue
+		}
 
-		_, err = s.udpConn.WriteToUDP([]byte("ok\n"), udpAddr)
+		buf[CMsgTypeOffset] = CMsgTypeRsp
+		binary.BigEndian.PutUint32(buf[CMsgBacklogOffset:], 1)
+
+		_, err = s.udpConn.WriteToUDP(buf, udpAddr)
 		ChkErrOnExit(err, fmt.Sprintf("Server WriteToUDP failed! IP: %s", udpAddr.IP.String()))
 	}
 }
